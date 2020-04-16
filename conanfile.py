@@ -15,6 +15,7 @@ class SpirvToolsConan(ConanFile):
     exports_sources = "CMakeLists.txt"
     generators = "cmake"
     settings = "os", "arch", "compiler", "build_type"
+    short_paths = True
     options = {
         "shared": [True, False],
         "fPIC": [True, False],
