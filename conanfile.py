@@ -97,21 +97,21 @@ class SpirvToolsConan(ConanFile):
                 os.remove(header_file)
         # Remove unwanted runtime files
         if self.settings.os == "Windows" and not (self.options.c_api_only and self.options.shared):
-            os.remove(os.path.join(self.package_folder, "bin", "SPIRV-Tools-shared.dll"))
+            for bin_file in glob.glob(os.path.join(self.package_folder, "bin", "*SPIRV-Tools-shared.dll")):
+                os.remove(bin_file)
         # Remove unwanted lib files
         if self.options.c_api_only:
             if self.options.shared:
-                for lib_file in glob.glob(os.path.join(self.package_folder, "lib", "*")):
+                for lib_file in glob.glob(os.path.join(self.package_folder, "lib", "*SPIRV-Tools*")):
                     if not os.path.splitext(lib_file)[0].endswith(("SPIRV-Tools-shared", "SPIRV-Tools-shared.dll")):
                         os.remove(lib_file)
             else:
-                for lib_file in glob.glob(os.path.join(self.package_folder, "lib", "*")):
+                for lib_file in glob.glob(os.path.join(self.package_folder, "lib", "*SPIRV-Tools*")):
                     if not os.path.splitext(lib_file)[0].endswith("SPIRV-Tools"):
                         os.remove(lib_file)
         else:
-            for lib_file in glob.glob(os.path.join(self.package_folder, "lib", "*")):
-                if os.path.splitext(lib_file)[0].endswith(("SPIRV-Tools-shared", "SPIRV-Tools-shared.dll")):
-                    os.remove(lib_file)
+            for lib_file in glob.glob(os.path.join(self.package_folder, "lib", "*SPIRV-Tools-shared*")):
+                os.remove(lib_file)
 
     def package_info(self):
         # TODO: set targets names when components available in conan
