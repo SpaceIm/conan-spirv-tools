@@ -123,5 +123,5 @@ class SpirvToolsConan(ConanFile):
         else:
             self.cpp_info.libs = ["SPIRV-Tools-reduce", "SPIRV-Tools-link", "SPIRV-Tools-opt", "SPIRV-Tools"]
         if self.settings.os == "Linux":
-            self.cpp_info.defines.append("rt") # for SPIRV-Tools
+            self.cpp_info.system_libs.append("rt") # for SPIRV-Tools
         self.env_info.PATH.append(os.path.join(self.package_folder, "bin"))
