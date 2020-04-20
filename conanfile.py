@@ -2,7 +2,6 @@ import glob
 import os
 
 from conans import ConanFile, CMake, tools
-from conans.errors import ConanInvalidConfiguration
 
 class SpirvToolsConan(ConanFile):
     name = "spirv-tools"
@@ -16,16 +15,8 @@ class SpirvToolsConan(ConanFile):
     generators = "cmake"
     settings = "os", "arch", "compiler", "build_type"
     short_paths = True
-    options = {
-        "shared": [True, False],
-        "fPIC": [True, False],
-        "c_api_only": [True, False]
-    }
-    default_options = {
-        "shared": False,
-        "fPIC": True,
-        "c_api_only": False
-    }
+    options = {"shared": [True, False], "fPIC": [True, False]}
+    default_options = {"shared": False, "fPIC": True}
 
     _cmake = None
 
@@ -66,11 +57,8 @@ class SpirvToolsConan(ConanFile):
         if self._cmake:
             return self._cmake
         self._cmake = CMake(self)
-        if self.options.shared:
-            if self.options.c_api_only:
-                self._cmake.definitions["BUILD_SHARED_LIBS"] = False
-            elif self.settings.compiler == "Visual Studio":
-                self._cmake.definitions["CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = True
+        if self.options.shared and self.settings.compiler == "Visual Studio":
+            self._cmake.definitions["CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS"] = True
         self._cmake.definitions["SKIP_SPIRV_TOOLS_INSTALL"] = False
         self._cmake.definitions["SPIRV_WERROR"] = False
         self._cmake.definitions["SPIRV_LOG_DEBUG"] = False
@@ -88,43 +76,20 @@ class SpirvToolsConan(ConanFile):
         cmake.install()
         tools.rmdir(os.path.join(self.package_folder, "lib", "pkgconfig"))
         tools.rmdir(os.path.join(self.package_folder, "lib", "cmake"))
-        self._cleanup_package_folder()
-
-    def _cleanup_package_folder(self):
-        # Remove unwanted header files
-        if self.options.c_api_only:
-            for header_file in glob.glob(os.path.join(self.package_folder, "include", "spirv-tools", "*.hpp")):
-                os.remove(header_file)
-        # Remove unwanted runtime files
-        if self.settings.os == "Windows" and not (self.options.c_api_only and self.options.shared):
-            for bin_file in glob.glob(os.path.join(self.package_folder, "bin", "*SPIRV-Tools-shared.dll")):
-                os.remove(bin_file)
-        # Remove unwanted lib files
-        if self.options.c_api_only:
-            if self.options.shared:
-                for lib_file in glob.glob(os.path.join(self.package_folder, "lib", "*SPIRV-Tools*")):
-                    if not os.path.splitext(lib_file)[0].endswith(("SPIRV-Tools-shared", "SPIRV-Tools-shared.dll")):
-                        os.remove(lib_file)
-            else:
-                for lib_file in glob.glob(os.path.join(self.package_folder, "lib", "*SPIRV-Tools*")):
-                    if not os.path.splitext(lib_file)[0].endswith("SPIRV-Tools"):
-                        os.remove(lib_file)
-        else:
-            for lib_file in glob.glob(os.path.join(self.package_folder, "lib", "*SPIRV-Tools-shared*")):
-                os.remove(lib_file)
+        tools.rmdir(os.path.join(self.package_folder, "SPIRV-Tools"))
+        tools.rmdir(os.path.join(self.package_folder, "SPIRV-Tools-link"))
+        tools.rmdir(os.path.join(self.package_folder, "SPIRV-Tools-opt"))
+        tools.rmdir(os.path.join(self.package_folder, "SPIRV-Tools-reduce"))
+        for bin_file in glob.glob(os.path.join(self.package_folder, "bin", "*SPIRV-Tools-shared.dll")):
+            os.remove(bin_file)
+        for lib_file in glob.glob(os.path.join(self.package_folder, "lib", "*SPIRV-Tools-shared*")):
+            os.remove(lib_file)
 
     def package_info(self):
         # TODO: set targets names when components available in conan
         self.cpp_info.names["cmake_find_package"] = "SPIRV-Tools"
         self.cpp_info.names["cmake_find_package_multi"] = "SPIRV-Tools"
-        if self.options.c_api_only:
-            if self.options.shared:
-                self.cpp_info.libs = ["SPIRV-Tools-shared"]
-                self.cpp_info.defines.append("SPIRV_TOOLS_SHAREDLIB")
-            else:
-                self.cpp_info.libs = ["SPIRV-Tools"]
-        else:
-            self.cpp_info.libs = ["SPIRV-Tools-reduce", "SPIRV-Tools-link", "SPIRV-Tools-opt", "SPIRV-Tools"]
+        self.cpp_info.libs = ["SPIRV-Tools-reduce", "SPIRV-Tools-link", "SPIRV-Tools-opt", "SPIRV-Tools"]
         if self.settings.os == "Linux":
             self.cpp_info.system_libs.append("rt") # for SPIRV-Tools
         self.env_info.PATH.append(os.path.join(self.package_folder, "bin"))
