@@ -1,4 +1,7 @@
 sources:
+  "2020.1":
+    url: "https://github.com/KhronosGroup/SPIRV-Tools/archive/v2020.1.tar.gz"
+    sha256: "1eaa5e09c638d7113b60d825e6ce44406b35031be68db894a016b5faf45de568"
   "2019.5":
     url: "https://github.com/KhronosGroup/SPIRV-Tools/archive/v2019.5.tar.gz"
     sha256: "c1560aa1ffc7526f580b56d08225f3f61acdfb037db4939f4c90fee21f08f49b"
