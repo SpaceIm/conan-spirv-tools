@@ -115,6 +115,8 @@ class SpirvToolsConan(ConanFile):
 
     def package_info(self):
         # TODO: set targets names when components available in conan
+        self.cpp_info.names["cmake_find_package"] = "SPIRV-Tools"
+        self.cpp_info.names["cmake_find_package_multi"] = "SPIRV-Tools"
         if self.options.c_api_only:
             if self.options.shared:
                 self.cpp_info.libs = ["SPIRV-Tools-shared"]
