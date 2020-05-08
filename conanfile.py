@@ -86,10 +86,44 @@ class SpirvToolsConan(ConanFile):
             os.remove(lib_file)
 
     def package_info(self):
-        # TODO: set targets names when components available in conan
         self.cpp_info.names["cmake_find_package"] = "SPIRV-Tools"
         self.cpp_info.names["cmake_find_package_multi"] = "SPIRV-Tools"
-        self.cpp_info.libs = ["SPIRV-Tools-reduce", "SPIRV-Tools-link", "SPIRV-Tools-opt", "SPIRV-Tools"]
+        self.cpp_info.names["pkg_config"] = "SPIRV-Tools"
+        # SPIRV-Tools component
+        self.cpp_info.components["spirv-tools-core"].names["cmake_find_package"] = "SPIRV-Tools"
+        self.cpp_info.components["spirv-tools-core"].names["cmake_find_package_multi"] = "SPIRV-Tools"
+        self.cpp_info.components["spirv-tools-core"].libs = ["SPIRV-Tools"]
+        self.cpp_info.components["spirv-tools-core"].requires = ["spirv-headers::spirv-headers"]
         if self.settings.os == "Linux":
-            self.cpp_info.system_libs.append("rt") # for SPIRV-Tools
-        self.env_info.PATH.append(os.path.join(self.package_folder, "bin"))
+            self.cpp_info.components["spirv-tools-core"].system_libs.append("rt")
+        if not self.options.shared and self._stdcpp_library:
+            self.cpp_info.components["spirv-tools-core"].system_libs.append(self._stdcpp_library)
+        # SPIRV-Tools-opt component
+        self.cpp_info.components["spirv-tools-opt"].names["cmake_find_package"] = "SPIRV-Tools-opt"
+        self.cpp_info.components["spirv-tools-opt"].names["cmake_find_package_multi"] = "SPIRV-Tools-opt"
+        self.cpp_info.components["spirv-tools-opt"].libs = ["SPIRV-Tools-opt"]
+        self.cpp_info.components["spirv-tools-opt"].requires = ["spirv-tools-core", "spirv-headers::spirv-headers"]
+        # SPIRV-Tools-link component
+        self.cpp_info.components["spirv-tools-link"].names["cmake_find_package"] = "SPIRV-Tools-link"
+        self.cpp_info.components["spirv-tools-link"].names["cmake_find_package_multi"] = "SPIRV-Tools-link"
+        self.cpp_info.components["spirv-tools-link"].libs = ["SPIRV-Tools-link"]
+        self.cpp_info.components["spirv-tools-link"].requires = ["spirv-tools-opt"]
+        # SPIRV-Tools-reduce component
+        self.cpp_info.components["spirv-tools-reduce"].names["cmake_find_package"] = "SPIRV-Tools-reduce"
+        self.cpp_info.components["spirv-tools-reduce"].names["cmake_find_package_multi"] = "SPIRV-Tools-reduce"
+        self.cpp_info.components["spirv-tools-reduce"].libs = ["SPIRV-Tools-reduce"]
+        self.cpp_info.components["spirv-tools-reduce"].requires = ["spirv-tools-core", "spirv-tools-opt"]
+
+        bin_path = os.path.join(self.package_folder, "bin")
+        self.output.info("Appending PATH environment variable: {}".format(bin_path))
+        self.env_info.path.append(bin_path)
+
+    @property
+    def _stdcpp_library(self):
+        libcxx = self.settings.get_safe("compiler.libcxx")
+        if libcxx in ("libstdc++", "libstdc++11"):
+            return "stdc++"
+        elif libcxx in ("libc++",):
+            return "c++"
+        else:
+            return False
