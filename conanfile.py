@@ -89,10 +89,8 @@ class SpirvToolsConan(ConanFile):
             os.remove(lib_file)
 
     def package_info(self):
-        self.cpp_info.names["cmake_find_package"] = "SPIRV-Tools"
-        self.cpp_info.names["cmake_find_package_multi"] = "SPIRV-Tools"
         self.cpp_info.names["pkg_config"] = "SPIRV-Tools"
-        # SPIRV-Tools component
+        # SPIRV-Tools
         self.cpp_info.components["spirv-tools-core"].names["cmake_find_package"] = "SPIRV-Tools"
         self.cpp_info.components["spirv-tools-core"].names["cmake_find_package_multi"] = "SPIRV-Tools"
         self.cpp_info.components["spirv-tools-core"].libs = ["SPIRV-Tools"]
@@ -101,17 +99,19 @@ class SpirvToolsConan(ConanFile):
             self.cpp_info.components["spirv-tools-core"].system_libs.append("rt")
         if not self.options.shared and tools.stdcpp_library(self):
             self.cpp_info.components["spirv-tools-core"].system_libs.append(tools.stdcpp_library(self))
-        # SPIRV-Tools-opt component
+        # SPIRV-Tools-opt
         self.cpp_info.components["spirv-tools-opt"].names["cmake_find_package"] = "SPIRV-Tools-opt"
         self.cpp_info.components["spirv-tools-opt"].names["cmake_find_package_multi"] = "SPIRV-Tools-opt"
         self.cpp_info.components["spirv-tools-opt"].libs = ["SPIRV-Tools-opt"]
         self.cpp_info.components["spirv-tools-opt"].requires = ["spirv-tools-core", "spirv-headers::spirv-headers"]
-        # SPIRV-Tools-link component
+        if self.settings.os == "Linux":
+            self.cpp_info.components["spirv-tools-opt"].system_libs.append("m")
+        # SPIRV-Tools-link
         self.cpp_info.components["spirv-tools-link"].names["cmake_find_package"] = "SPIRV-Tools-link"
         self.cpp_info.components["spirv-tools-link"].names["cmake_find_package_multi"] = "SPIRV-Tools-link"
         self.cpp_info.components["spirv-tools-link"].libs = ["SPIRV-Tools-link"]
-        self.cpp_info.components["spirv-tools-link"].requires = ["spirv-tools-opt"]
-        # SPIRV-Tools-reduce component
+        self.cpp_info.components["spirv-tools-link"].requires = ["spirv-tools-core", "spirv-tools-opt"]
+        # SPIRV-Tools-reduce
         self.cpp_info.components["spirv-tools-reduce"].names["cmake_find_package"] = "SPIRV-Tools-reduce"
         self.cpp_info.components["spirv-tools-reduce"].names["cmake_find_package_multi"] = "SPIRV-Tools-reduce"
         self.cpp_info.components["spirv-tools-reduce"].libs = ["SPIRV-Tools-reduce"]
