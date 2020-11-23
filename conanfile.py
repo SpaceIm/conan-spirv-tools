@@ -37,10 +37,18 @@ class SpirvToolsConan(ConanFile):
             tools.check_min_cppstd(self, 11)
 
     def requirements(self):
-        self.requires("spirv-headers/{}".format(self._get_compatible_spirv_headers_version()))
+        self.requires("spirv-headers/{}".format(self._get_compatible_spirv_headers_version))
 
+    @property
     def _get_compatible_spirv_headers_version(self):
-        return "1.5.4" if tools.Version(self.version) >= "2020.2" else "1.5.1"
+        return {
+            "2019.2": "1.5.1",
+            "2019.5": "1.5.1",
+            "2020.1": "1.5.3",
+            "2020.2": "1.5.3",
+            "2020.3": "1.5.3",
+            "2020.4": "1.5.4",
+        }.get(str(self.version))
 
     def source(self):
         tools.get(**self.conan_data["sources"][self.version])
