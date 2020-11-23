@@ -104,7 +104,8 @@ class SpirvToolsConan(ConanFile):
             tools.remove_files_by_mask(os.path.join(self.package_folder, "lib"), "*SPIRV-Tools-shared*")
 
     def package_info(self):
-        self.cpp_info.names["pkg_config"] = "SPIRV-Tools"
+        self.cpp_info.names["pkg_config"] = "SPIRV-Tools-shared" if self.options.shared else "SPIRV-Tools"
+        # FIXME: official CMake imported targets are not namespaced
         # SPIRV-Tools
         self.cpp_info.components["spirv-tools-core"].names["cmake_find_package"] = "SPIRV-Tools"
         self.cpp_info.components["spirv-tools-core"].names["cmake_find_package_multi"] = "SPIRV-Tools"
@@ -117,6 +118,14 @@ class SpirvToolsConan(ConanFile):
         if not self.options.shared and tools.stdcpp_library(self):
             self.cpp_info.components["spirv-tools-core"].system_libs.append(tools.stdcpp_library(self))
 
+        # Also provide official CMake imported target names for SPIRV-Tools lib:
+        # - if shared: SPIRV-Tools-shared
+        # - if static: SPIRV-Tools-static if version >= 2020.5 else SPIRV-Tools
+        spirv_tools_target = "SPIRV-Tools-shared" if self.options.shared else "SPIRV-Tools-static"
+        self.cpp_info.components["spirv-tools-core-alias"].names["cmake_find_package"] = spirv_tools_target
+        self.cpp_info.components["spirv-tools-core-alias"].names["cmake_find_package_multi"] = spirv_tools_target
+
+        # FIXME: others components should have their own CMake config file
         if not self.options.shared:
             # SPIRV-Tools-opt
             self.cpp_info.components["spirv-tools-opt"].names["cmake_find_package"] = "SPIRV-Tools-opt"
