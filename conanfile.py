@@ -8,8 +8,7 @@ required_conan_version = ">=1.29.1"
 
 class SpirvToolsConan(ConanFile):
     name = "spirv-tools"
-    description = "SPIRV-Cross is a practical tool and library for performing " \
-                  "reflection on SPIR-V and disassembling SPIR-V back to high level languages."
+    description = "Create and optimize SPIRV shaders"
     license = "Apache-2.0"
     topics = ("conan", "spirv-tools", "spirv", "spirv-v", "vulkan", "opengl", "opencl", "hlsl", "khronos")
     homepage = "https://github.com/KhronosGroup/SPIRV-Tools"
