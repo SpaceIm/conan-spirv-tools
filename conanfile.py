@@ -11,7 +11,7 @@ class SpirvToolsConan(ConanFile):
     topics = ("conan", "spirv-tools", "spirv", "spirv-v", "vulkan", "opengl", "opencl", "hlsl", "khronos")
     homepage = "https://github.com/KhronosGroup/SPIRV-Tools"
     url = "https://github.com/conan-io/conan-center-index"
-    exports_sources = "CMakeLists.txt"
+    exports_sources = ["CMakeLists.txt", "patches/**"]
     generators = "cmake"
     settings = "os", "arch", "compiler", "build_type"
     short_paths = True
@@ -47,7 +47,7 @@ class SpirvToolsConan(ConanFile):
             "2020.1": "1.5.3",
             "2020.2": "1.5.3",
             "2020.3": "1.5.3",
-            "2020.4": "1.5.4",
+            "2020.5": "1.5.4",
         }.get(str(self.version))
 
     def source(self):
@@ -60,6 +60,8 @@ class SpirvToolsConan(ConanFile):
         cmake.build()
 
     def _patch_sources(self):
+        for patch in self.conan_data.get("patches", {}).get(self.version, []):
+            tools.patch(**patch)
         # don't force PIC
         tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
                               "set(CMAKE_POSITION_INDEPENDENT_CODE ON)", "")
@@ -76,7 +78,7 @@ class SpirvToolsConan(ConanFile):
         self._cmake.definitions["SPIRV_SKIP_EXECUTABLES"] = False
         self._cmake.definitions["SPIRV_SKIP_TESTS"] = True
         self._cmake.definitions["SPIRV_CHECK_CONTEXT"] = False
-        self._cmake.definitions["SPIRV-Headers_SOURCE_DIR"] = self.deps_cpp_info["spirv-headers"].rootpath
+        self._cmake.definitions["SPIRV-Headers_SOURCE_DIR"] = self.deps_cpp_info["spirv-headers"].rootpath.replace("\\", "/")
         self._cmake.definitions["SPIRV_BUILD_FUZZER"] = False
         self._cmake.configure(build_folder=self._build_subfolder)
         return self._cmake
