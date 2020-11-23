@@ -40,7 +40,7 @@ class SpirvToolsConan(ConanFile):
         self.requires("spirv-headers/{}".format(self._get_compatible_spirv_headers_version()))
 
     def _get_compatible_spirv_headers_version(self):
-        return "1.5.3" if tools.Version(self.version) >= "2020.2" else "1.5.1"
+        return "1.5.4" if tools.Version(self.version) >= "2020.2" else "1.5.1"
 
     def source(self):
         tools.get(**self.conan_data["sources"][self.version])
