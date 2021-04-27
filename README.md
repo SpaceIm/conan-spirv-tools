@@ -2,9 +2,9 @@
 
 ## Package Status
 
-| Windows | Linux | macOS |
-|:-------:|:-----:|:-----:|
-|[![Build status](https://ci.appveyor.com/api/projects/status/4lg52sid03itbdic/branch/testing%2F2020.3?svg=true)](https://ci.appveyor.com/project/SpaceIm/conan-spirv-tools)|[![Build status](https://github.com/SpaceIm/conan-spirv-tools/workflows/.github/workflows/conan.yml/badge.svg?branch=testing%2F2020.3)](https://github.com/SpaceIm/conan-spirv-tools/actions?query=branch%3Atesting%2F2020.3)|[![Build Status](https://travis-ci.com/SpaceIm/conan-spirv-tools.svg?branch=testing%2F2020.3)](https://travis-ci.com/SpaceIm/conan-spirv-tools)|
+| Windows (MinGW) | Windows (Visual Studio) | Linux | macOS |
+|:---------------:|:-----------------------:|:-----:|:-----:|
+|[![Build status](https://ci.appveyor.com/api/projects/status/4lg52sid03itbdic/branch/testing%2F2020.3?svg=true)](https://ci.appveyor.com/project/SpaceIm/conan-spirv-tools)|[![Build status](https://github.com/SpaceIm/conan-spirv-tools/workflows/.github/workflows/windows.yml/badge.svg?branch=testing%2F2020.3)](https://github.com/SpaceIm/conan-spirv-tools/actions/workflows/windows.yml?query=branch%3Atesting%2F2020.3)|[![Build status](https://github.com/SpaceIm/conan-spirv-tools/workflows/.github/workflows/linux.yml/badge.svg?branch=testing%2F2020.3)](https://github.com/SpaceIm/conan-spirv-tools/actions/workflows/linux.yml?query=branch%3Atesting%2F2020.3)|[![Build status](https://github.com/SpaceIm/conan-spirv-tools/workflows/.github/workflows/macos.yml/badge.svg?branch=testing%2F2020.3)](https://github.com/SpaceIm/conan-spirv-tools/actions/workflows/macos.yml?query=branch%3Atesting%2F2020.3)|
 
 ## Description
 
