@@ -107,6 +107,9 @@ class SpirvtoolsConan(ConanFile):
         cmake.definitions["SPIRV_BUILD_FUZZER"] = False
         cmake.definitions["SPIRV_SKIP_EXECUTABLES"] = not self.options.build_executables
 
+        # Avoid configuration error if building for iOS/tvOS/watchOS
+        cmake.definitions["CMAKE_MACOSX_BUNDLE"] = False
+
         cmake.configure(build_folder=self._build_subfolder)
         self._cmake = cmake
         return self._cmake
