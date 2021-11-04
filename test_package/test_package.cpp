@@ -19,12 +19,12 @@
 // * Optimizing
 // * Disassembling
 
-#include "spirv-tools/libspirv.hpp"
-#include "spirv-tools/optimizer.hpp"
-
 #include <iostream>
 #include <string>
 #include <vector>
+
+#include "spirv-tools/libspirv.hpp"
+#include "spirv-tools/optimizer.hpp"
 
 int main() {
   const std::string source =

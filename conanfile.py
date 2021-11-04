@@ -1,25 +1,35 @@
 from conans import ConanFile, CMake, tools
 from conans.errors import ConanInvalidConfiguration
-import glob
 import os
+import textwrap
 
-required_conan_version = ">=1.29.1"
+required_conan_version = ">=1.33.0"
 
 
-class SpirvToolsConan(ConanFile):
+class SpirvtoolsConan(ConanFile):
     name = "spirv-tools"
     description = "Create and optimize SPIRV shaders"
     license = "Apache-2.0"
-    topics = ("conan", "spirv-tools", "spirv", "spirv-v", "vulkan", "opengl", "opencl", "hlsl", "khronos")
+    topics = ("spirv", "spirv-v", "vulkan", "opengl", "opencl", "hlsl", "khronos")
     homepage = "https://github.com/KhronosGroup/SPIRV-Tools"
     url = "https://github.com/conan-io/conan-center-index"
+
+    settings = "os", "compiler", "arch", "build_type"
+    options = {
+        "shared": [True, False],
+        "fPIC": [True, False],
+        "build_executables": [True, False],
+    }
+    default_options = {
+        "shared": False,
+        "fPIC": True,
+        "build_executables": True,
+    }
+
+    short_paths = True
+
     exports_sources = ["CMakeLists.txt", "patches/**"]
     generators = "cmake"
-    settings = "os", "arch", "compiler", "build_type"
-    short_paths = True
-    options = {"shared": [True, False], "fPIC": [True, False]}
-    default_options = {"shared": False, "fPIC": True}
-
     _cmake = None
 
     @property
@@ -37,8 +47,6 @@ class SpirvToolsConan(ConanFile):
     def configure(self):
         if self.options.shared:
             del self.options.fPIC
-        if self.settings.compiler.cppstd:
-            tools.check_min_cppstd(self, 11)
 
     def requirements(self):
         if not self._get_compatible_spirv_headers_version:
@@ -48,13 +56,17 @@ class SpirvToolsConan(ConanFile):
     @property
     def _get_compatible_spirv_headers_version(self):
         return {
-            "2019.2": "1.5.1",
-            "2019.5": "1.5.1",
-            "2020.1": "1.5.3",
-            "2020.2": "1.5.3",
-            "2020.3": "1.5.3",
+            "2021.2": "cci.20210616",
             "2020.5": "1.5.4",
+            "2020.3": "1.5.3",
+            "2020.1": "1.5.3",
+            "2019.5": "1.5.1",
+            "2019.2": "1.5.1",
         }.get(str(self.version), False)
+
+    def validate(self):
+        if self.settings.compiler.get_safe("cppstd"):
+            tools.check_min_cppstd(self, 11)
 
     def _validate_dependency_graph(self):
         if self.deps_cpp_info["spirv-headers"].version != self._get_compatible_spirv_headers_version:
@@ -62,8 +74,38 @@ class SpirvToolsConan(ConanFile):
                                             .format(self.version, self._get_compatible_spirv_headers_version))
 
     def source(self):
-        tools.get(**self.conan_data["sources"][self.version])
-        os.rename("SPIRV-Tools-" + self.version, self._source_subfolder)
+        tools.get(**self.conan_data["sources"][self.version],
+                  destination=self._source_subfolder, strip_root=True)
+
+    def _configure_cmake(self):
+        if self._cmake:
+            return self._cmake
+
+        cmake = CMake(self)
+
+        # - Before 2020.5, the shared lib is always built, but static libs might be built as shared
+        #   with BUILD_SHARED_LIBS injection (which doesn't work due to symbols visibility, at least for msvc)
+        # - From 2020.5, static and shared libs are fully controlled by upstream CMakeLists.txt
+        if tools.Version(self.version) < "2020.5":
+            cmake.definitions["BUILD_SHARED_LIBS"] = False
+
+        # Required by the project's CMakeLists.txt
+        cmake.definitions["SPIRV-Headers_SOURCE_DIR"] = self.deps_cpp_info["spirv-headers"].rootpath.replace("\\", "/")
+
+        # There are some switch( ) statements that are causing errors
+        # need to turn this off
+        cmake.definitions["SPIRV_WERROR"] = False
+
+        cmake.definitions["SKIP_SPIRV_TOOLS_INSTALL"] = False
+        cmake.definitions["SPIRV_LOG_DEBUG"] = False
+        cmake.definitions["SPIRV_SKIP_TESTS"] = True
+        cmake.definitions["SPIRV_CHECK_CONTEXT"] = False
+        cmake.definitions["SPIRV_BUILD_FUZZER"] = False
+        cmake.definitions["SPIRV_SKIP_EXECUTABLES"] = not self.options.build_executables
+
+        cmake.configure(build_folder=self._build_subfolder)
+        self._cmake = cmake
+        return self._cmake
 
     def build(self):
         self._validate_dependency_graph()
@@ -74,31 +116,16 @@ class SpirvToolsConan(ConanFile):
     def _patch_sources(self):
         for patch in self.conan_data.get("patches", {}).get(self.version, []):
             tools.patch(**patch)
-        # don't force PIC
+        # CMAKE_POSITION_INDEPENDENT_CODE was set ON for the entire
+        # project in the lists file.
         tools.replace_in_file(os.path.join(self._source_subfolder, "CMakeLists.txt"),
                               "set(CMAKE_POSITION_INDEPENDENT_CODE ON)", "")
 
-    def _configure_cmake(self):
-        if self._cmake:
-            return self._cmake
-        self._cmake = CMake(self)
-        if tools.Version(self.version) < "2020.5":
-            self._cmake.definitions["BUILD_SHARED_LIBS"] = False
-        self._cmake.definitions["SKIP_SPIRV_TOOLS_INSTALL"] = False
-        self._cmake.definitions["SPIRV_WERROR"] = False
-        self._cmake.definitions["SPIRV_LOG_DEBUG"] = False
-        self._cmake.definitions["SPIRV_SKIP_EXECUTABLES"] = False
-        self._cmake.definitions["SPIRV_SKIP_TESTS"] = True
-        self._cmake.definitions["SPIRV_CHECK_CONTEXT"] = False
-        self._cmake.definitions["SPIRV-Headers_SOURCE_DIR"] = self.deps_cpp_info["spirv-headers"].rootpath.replace("\\", "/")
-        self._cmake.definitions["SPIRV_BUILD_FUZZER"] = False
-        self._cmake.configure(build_folder=self._build_subfolder)
-        return self._cmake
-
     def package(self):
-        self.copy("LICENSE", dst="licenses", src=self._source_subfolder)
+        self.copy(pattern="LICENSE*", dst="licenses", src=self._source_subfolder)
         cmake = self._configure_cmake()
         cmake.install()
+
         tools.rmdir(os.path.join(self.package_folder, "lib", "pkgconfig"))
         tools.rmdir(os.path.join(self.package_folder, "lib", "cmake"))
         tools.rmdir(os.path.join(self.package_folder, "SPIRV-Tools"))
@@ -113,45 +140,88 @@ class SpirvToolsConan(ConanFile):
             tools.remove_files_by_mask(os.path.join(self.package_folder, "bin"), "*SPIRV-Tools-shared.dll")
             tools.remove_files_by_mask(os.path.join(self.package_folder, "lib"), "*SPIRV-Tools-shared*")
 
+        if self.options.shared:
+            targets = {"SPIRV-Tools-shared": "spirv-tools::SPIRV-Tools"}
+        else:
+            targets = {
+                "SPIRV-Tools": "spirv-tools::SPIRV-Tools", # before 2020.5, kept for conveniency
+                "SPIRV-Tools-static": "spirv-tools::SPIRV-Tools",
+                "SPIRV-Tools-opt": "spirv-tools::SPIRV-Tools-opt",
+                "SPIRV-Tools-link": "spirv-tools::SPIRV-Tools-link",
+                "SPIRV-Tools-reduce": "spirv-tools::SPIRV-Tools-reduce",
+            }
+        self._create_cmake_module_alias_targets(
+            os.path.join(self.package_folder, self._module_file_rel_path),
+            targets,
+        )
+
+    @staticmethod
+    def _create_cmake_module_alias_targets(module_file, targets):
+        content = ""
+        for alias, aliased in targets.items():
+            content += textwrap.dedent("""\
+                if(TARGET {aliased} AND NOT TARGET {alias})
+                    add_library({alias} INTERFACE IMPORTED)
+                    set_property(TARGET {alias} PROPERTY INTERFACE_LINK_LIBRARIES {aliased})
+                endif()
+            """.format(alias=alias, aliased=aliased))
+        tools.save(module_file, content)
+
+    @property
+    def _module_subfolder(self):
+        return os.path.join("lib", "cmake")
+
+    @property
+    def _module_file_rel_path(self):
+        return os.path.join(self._module_subfolder,
+                            "conan-official-{}-targets.cmake".format(self.name))
+
     def package_info(self):
+        self.cpp_info.filenames["cmake_find_package"] = "SPIRV-Tools"
+        self.cpp_info.filenames["cmake_find_package_multi"] = "SPIRV-Tools"
         self.cpp_info.names["pkg_config"] = "SPIRV-Tools-shared" if self.options.shared else "SPIRV-Tools"
-        # FIXME: official CMake imported targets are not namespaced
+
         # SPIRV-Tools
         self.cpp_info.components["spirv-tools-core"].names["cmake_find_package"] = "SPIRV-Tools"
         self.cpp_info.components["spirv-tools-core"].names["cmake_find_package_multi"] = "SPIRV-Tools"
+        self.cpp_info.components["spirv-tools-core"].builddirs.append(self._module_subfolder)
+        self.cpp_info.components["spirv-tools-core"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
+        self.cpp_info.components["spirv-tools-core"].build_modules["cmake_find_package_multi"] = [self._module_file_rel_path]
         self.cpp_info.components["spirv-tools-core"].libs = ["SPIRV-Tools-shared" if self.options.shared else "SPIRV-Tools"]
         self.cpp_info.components["spirv-tools-core"].requires = ["spirv-headers::spirv-headers"]
         if self.options.shared:
             self.cpp_info.components["spirv-tools-core"].defines = ["SPIRV_TOOLS_SHAREDLIB"]
-        if self.settings.os == "Linux":
-            self.cpp_info.components["spirv-tools-core"].system_libs.append("rt")
+        if self.settings.os in ["Linux", "FreeBSD"]:
+            self.cpp_info.components["spirv-tools-core"].system_libs.extend(["m", "rt"])
         if not self.options.shared and tools.stdcpp_library(self):
             self.cpp_info.components["spirv-tools-core"].system_libs.append(tools.stdcpp_library(self))
-
-        # Also provide official CMake imported target names for SPIRV-Tools lib:
-        # - if shared: SPIRV-Tools-shared
-        # - if static: SPIRV-Tools-static if version >= 2020.5 else SPIRV-Tools
-        spirv_tools_target = "SPIRV-Tools-shared" if self.options.shared else "SPIRV-Tools-static"
-        self.cpp_info.components["spirv-tools-core-alias"].names["cmake_find_package"] = spirv_tools_target
-        self.cpp_info.components["spirv-tools-core-alias"].names["cmake_find_package_multi"] = spirv_tools_target
 
         # FIXME: others components should have their own CMake config file
         if not self.options.shared:
             # SPIRV-Tools-opt
             self.cpp_info.components["spirv-tools-opt"].names["cmake_find_package"] = "SPIRV-Tools-opt"
             self.cpp_info.components["spirv-tools-opt"].names["cmake_find_package_multi"] = "SPIRV-Tools-opt"
+            self.cpp_info.components["spirv-tools-opt"].builddirs.append(self._module_subfolder)
+            self.cpp_info.components["spirv-tools-opt"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
+            self.cpp_info.components["spirv-tools-opt"].build_modules["cmake_find_package_multi"] = [self._module_file_rel_path]
             self.cpp_info.components["spirv-tools-opt"].libs = ["SPIRV-Tools-opt"]
             self.cpp_info.components["spirv-tools-opt"].requires = ["spirv-tools-core", "spirv-headers::spirv-headers"]
-            if self.settings.os == "Linux":
+            if self.settings.os in ["Linux", "FreeBSD"]:
                 self.cpp_info.components["spirv-tools-opt"].system_libs.append("m")
             # SPIRV-Tools-link
             self.cpp_info.components["spirv-tools-link"].names["cmake_find_package"] = "SPIRV-Tools-link"
             self.cpp_info.components["spirv-tools-link"].names["cmake_find_package_multi"] = "SPIRV-Tools-link"
+            self.cpp_info.components["spirv-tools-link"].builddirs.append(self._module_subfolder)
+            self.cpp_info.components["spirv-tools-link"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
+            self.cpp_info.components["spirv-tools-link"].build_modules["cmake_find_package_multi"] = [self._module_file_rel_path]
             self.cpp_info.components["spirv-tools-link"].libs = ["SPIRV-Tools-link"]
             self.cpp_info.components["spirv-tools-link"].requires = ["spirv-tools-core", "spirv-tools-opt"]
             # SPIRV-Tools-reduce
             self.cpp_info.components["spirv-tools-reduce"].names["cmake_find_package"] = "SPIRV-Tools-reduce"
             self.cpp_info.components["spirv-tools-reduce"].names["cmake_find_package_multi"] = "SPIRV-Tools-reduce"
+            self.cpp_info.components["spirv-tools-reduce"].builddirs.append(self._module_subfolder)
+            self.cpp_info.components["spirv-tools-reduce"].build_modules["cmake_find_package"] = [self._module_file_rel_path]
+            self.cpp_info.components["spirv-tools-reduce"].build_modules["cmake_find_package_multi"] = [self._module_file_rel_path]
             self.cpp_info.components["spirv-tools-reduce"].libs = ["SPIRV-Tools-reduce"]
             self.cpp_info.components["spirv-tools-reduce"].requires = ["spirv-tools-core", "spirv-tools-opt"]
 
