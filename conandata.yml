@@ -11,12 +11,6 @@ sources:
   "2020.3":
     url: "https://github.com/KhronosGroup/SPIRV-Tools/archive/v2020.3.tar.gz"
     sha256: "8b538a1cb2a4275ef9617abcb047d54e8292f975ac1d93323d5dd1e19c85280b"
-  "2020.1":
-    url: "https://github.com/KhronosGroup/SPIRV-Tools/archive/v2020.1.tar.gz"
-    sha256: "1eaa5e09c638d7113b60d825e6ce44406b35031be68db894a016b5faf45de568"
-  "2019.5":
-    url: "https://github.com/KhronosGroup/SPIRV-Tools/archive/v2019.5.tar.gz"
-    sha256: "c1560aa1ffc7526f580b56d08225f3f61acdfb037db4939f4c90fee21f08f49b"
   "2019.2":
     url: "https://github.com/KhronosGroup/SPIRV-Tools/archive/v2019.2.tar.gz"
     sha256: "1fde9d2a0df920a401441cd77253fc7b3b9ab0578eabda8caaaceaa6c7638440"
@@ -30,17 +24,13 @@ patches:
   "2020.5":
     - patch_file: "patches/0001-fix-cmake-iOS-tvOS-watchOS-2020.5.patch"
       base_path: "source_subfolder"
-    - patch_file: "patches/0002-support-SPV_KHR_fragment_shading_rate.patch"
+    - patch_file: "patches/0003-support-SPV_KHR_fragment_shading_rate.patch"
       base_path: "source_subfolder"
   "2020.3":
-    - patch_file: "patches/0001-fix-cmake-iOS-tvOS-watchOS-2019.5.patch"
-      base_path: "source_subfolder"
-  "2020.1":
-    - patch_file: "patches/0001-fix-cmake-iOS-tvOS-watchOS-2019.5.patch"
-      base_path: "source_subfolder"
-  "2019.5":
-    - patch_file: "patches/0001-fix-cmake-iOS-tvOS-watchOS-2019.5.patch"
+    - patch_file: "patches/0001-fix-cmake-iOS-tvOS-watchOS-2020.3.patch"
       base_path: "source_subfolder"
   "2019.2":
     - patch_file: "patches/0001-fix-cmake-iOS-tvOS-watchOS-2019.2.patch"
+      base_path: "source_subfolder"
+    - patch_file: "patches/0002-allow-ios.patch"
       base_path: "source_subfolder"
